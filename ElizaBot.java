@@ -1,5 +1,8 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * Processing consists of the following steps.
@@ -29,66 +32,138 @@ import java.util.HashMap;
  * Finally, the resulting sentence is displayed as output.
  */
 public class ElizaBot {
-	
+
 	private final String GREETING = "Hello. How are you feeling today?";
 	private final String BYE = "Goodbye. Thank you for talking to me.";
 	private ArrayList<String> quit;
-	private HashMap<String,String> preSub;
-	private HashMap<String,String> postSub;
+	private HashMap<String, String> preSub;
+	private HashMap<String, String> postSub;
 	private ArrayList<String> synonyms;
-	private HashMap<String,KeyDetails> keyWords;
-	
+	private HashMap<String, KeyDetails> keyWords;
 
-	public ElizaBot(){
-		
+	public ElizaBot() {
+		this.quit = new ArrayList<String>();
+		this.preSub = new HashMap<String, String>();
+		this.postSub = new HashMap<String, String>();
+		this.synonyms = new ArrayList<String>();
+		this.keyWords = new HashMap<String, KeyDetails>();
 	}
-	
+
+	public String greet() {
+		return this.GREETING;
+	}
+
+	//Method responsible for analyzing user input and returning appropriate decomposition rule to use
+	public String process(String input) {
+		//Breaks the input into words and does pre substitution
+		String[] words = input.split(" ");
+		for (int i = 0; i < words.length; i++) {
+			if (preSub.containsKey(words[i])) {
+				words[i] = preSub.get(words[i]);
+			}
+		}
+		//Finds keywords and sorts in descending weight
+		ArrayList<String> keywords = new ArrayList<String>();
+		for (int i = 0; i < words.length; i++) {
+			if (keyWords.containsKey(words[i])) {
+				if (keywords.size() == 0) {
+					keywords.add(words[i]);
+				} else {
+					for (int j = 0; j < keywords.size(); j++) {
+						if (keyWords.get(keywords.get(j)).getRating() < keyWords.get(words[i]).getRating()) {
+							keywords.add(j, words[i]);
+							break;
+						} else if (j == keywords.size() - 1) {
+							keywords.add(words[i]);
+						}
+					}
+				}
+			}
+		}
+		Iterator<String> it = keywords.iterator();
+		while (it.hasNext()) {
+			HashMap<String, ArrayList<String>> rules = keyWords.get(it.next()).getRules();
+			Iterator<String> decompIt = rules.keySet().iterator();
+			while (decompIt.hasNext()) {
+				String decompRule = decompIt.next();
+				if (decompRule.contains("@")) {
+					Pattern p = Pattern.compile("@[^\\s]+", Pattern.CASE_INSENSITIVE);
+					Matcher m = p.matcher(decompRule);
+					String synWrd = m.group(0).substring(1); // Retrieves the word that is synonymous without the @
+					for (int i = 0; i < synonyms.size(); i++) {
+						if (synonyms.get(i).contains(synWrd)) {
+							String[] wrds = synonyms.get(i).split(" ");
+							for (int j = 0; j < wrds.length; j++) {
+								//Make decomp rule
+								//See if theres a match with input text
+								//If there use that decomp rule, no need to continue looking for another decomp rule
+								Pattern pRule = Pattern.compile(decompRule,Pattern.CASE_INSENSITIVE);
+								Matcher mRule = pRule.matcher(input);
+							}
+							break;//no need to keep looping
+						}
+					}
+
+				}else{
+					Pattern pRule = Pattern.compile(decompRule, Pattern.CASE_INSENSITIVE);
+					Matcher mRule = pRule.matcher(input);
+					//Check if the decomp rule matches the text input
+					//If yes use this decomp rule, no need to continue looking for another decomp rule
+				}
+			}
+		}
+		
+		return null;
+
+	}
+
 }
 
-class KeyDetails{
-	
+class KeyDetails {
+
 	private int rating;
+	// HashMap of the form <RegEx Decomp Rule, ArrayList<Reassembly Rules>>
 	private HashMap<String, ArrayList<String>> rules;
-	
+
 	/*
 	 * if no rating is given the default rating is 0
 	 */
-	public KeyDetails(){
+	public KeyDetails() {
 		this.rating = 0;
 	}
-	
-	public KeyDetails(int rating){
+
+	public KeyDetails(int rating) {
 		this.rating = rating;
 	}
-	
+
 	/*
-	 * Sets the rating ofa keyword
+	 * Gets the rating of a keyword
 	 */
-	public int setRating(){
+	public int getRating() {
 		return this.rating;
 	}
-	
+
 	/*
 	 * Method adds a decomposition pattern to the key word
 	 */
-	public void addDecomp(String key){
+	public void addDecomp(String key) {
 		this.rules.put(key, new ArrayList<String>());
 	}
-	
+
 	/*
 	 * Method adds an assembly rule to the key word
 	 */
-	public void addAssembly(String key, String asmblyRule){
-		if (!this.rules.containsKey(key)){
+	public void addAssembly(String key, String asmblyRule) {
+		if (!this.rules.containsKey(key)) {
 			this.addDecomp(key);
 		}
 		this.rules.get(key).add(asmblyRule);
 	}
-	
+
 	/*
 	 * Returns the rules hash map for the key word
 	 */
-	public HashMap<String, ArrayList<String>> getRules(){
+	public HashMap<String, ArrayList<String>> getRules() {
 		return this.rules;
 	}
 }
