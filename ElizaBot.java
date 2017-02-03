@@ -6,29 +6,29 @@ import java.util.regex.Pattern;
 
 /*
  * Processing consists of the following steps.
- * 
+ *
  * First the sentence broken down into words, separated by spaces.  All further
  * processing takes place on these words as a whole, not on the individual
  * characters in them.
- * 
+ *
  * Second, a set of pre-substitutions takes place.
- * 
+ *
  * Third, Eliza takes all the words in the sentence and makes a list of all
  * keywords it finds.  It sorts this keyword list in descending weight.  It
  * process these keywords until it produces an output.
- * 
+ *
  * Fourth, for the given keyword, a list of decomposition patterns is searched.
  * The first one that matches is selected.  If no match is found, the next keyword
  * is selected instead.
- * 
+ *
  * Fifth, for the matching decomposition pattern, a reassembly pattern is
  * selected.  There may be several reassembly patterns, but only one is used
  * for a given sentence.  If a subsequent sentence selects the same decomposition
  * pattern, the next reassembly pattern in sequence is used, until they have all
  * been used, at which point Eliza starts over with the first reassembly pattern.
- * 
+ *
  * Sixth, a set of post-substitutions takes place.
- * 
+ *
  * Finally, the resulting sentence is displayed as output.
  */
 public class ElizaBot {
@@ -53,8 +53,28 @@ public class ElizaBot {
 		return this.GREETING;
 	}
 
-	//Method responsible for analyzing user input and returning appropriate decomposition rule to use
-	public String process(String input) {
+	public void addPreSub(String key, String value){
+		this.preSub.put(key,value);
+	}
+
+	public void addPostSub(String key, String value){
+		this.preSub.put(key,value);
+	}
+
+	public void addSynonyms(String value){
+		this.synonyms.add(value);
+	}
+
+	public void addQuit(String value){
+		this.quit.add(value);
+	}
+
+	public void addKeyWord(String key, String value){
+
+	}
+
+	//Method responsible for analyzing user input and returning associated assembly rules to use
+	public ArrayList<String> process(String input) {
 		//Breaks the input into words and does pre substitution
 		String[] words = input.split(" ");
 		for (int i = 0; i < words.length; i++) {
@@ -95,28 +115,33 @@ public class ElizaBot {
 							String[] wrds = synonyms.get(i).split(" ");
 							for (int j = 0; j < wrds.length; j++) {
 								//Make decomp rule
-								//See if theres a match with input text
+								//See if there is a match with input text
 								//If there use that decomp rule, no need to continue looking for another decomp rule
-								Pattern pRule = Pattern.compile(decompRule,Pattern.CASE_INSENSITIVE);
+								String tempRule = m.replaceAll(wrds[j]);
+								Pattern pRule = Pattern.compile(tempRule,Pattern.CASE_INSENSITIVE);
 								Matcher mRule = pRule.matcher(input);
+								if (mRule.matches()){
+									return rules.get(decompRule);
+								}
 							}
-							break;//no need to keep looping
 						}
 					}
 
 				}else{
+					//There are no synonyms then ...
 					Pattern pRule = Pattern.compile(decompRule, Pattern.CASE_INSENSITIVE);
 					Matcher mRule = pRule.matcher(input);
+					if (mRule.matches()){
+						return rules.get(decompRule);
+					}
 					//Check if the decomp rule matches the text input
 					//If yes use this decomp rule, no need to continue looking for another decomp rule
 				}
 			}
 		}
-		
-		return null;
-
+		//Nothing matches then ...
+		return keyWords.get("xnone").getRules().get(".*");
 	}
-
 }
 
 class KeyDetails {
