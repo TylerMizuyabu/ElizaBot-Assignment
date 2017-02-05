@@ -1,0 +1,5 @@
+ELIZA BOT README
+
+In order for the code to work the file ElizaScript.txt must be in the same directory as the ElizaRunner.jar file
+
+Execute the jar file from terminal to start the Eliza Bot.
